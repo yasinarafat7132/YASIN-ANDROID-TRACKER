@@ -36,7 +36,7 @@ EOF
 echo -e "${GREEN}[+] Starting PHP server and ngrok...${NC}"
 php -S 127.0.0.1:8080 > /dev/null 2>&1 &
 ngrok http 8080 > /dev/null 2>&1 &
-sleep 8
+sleep 20
 
 NGROK_URL=$(curl -s http://127.0.0.1:4040/api/tunnels | grep -o 'https://[0-9a-z]*\\.ngrok.io')
 echo -e "${GREEN}[+] Ngrok URL generated:${NC} $NGROK_URL"
