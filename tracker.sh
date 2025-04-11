@@ -34,7 +34,7 @@ navigator.geolocation.getCurrentPosition(function(pos){
 EOF
 
 echo -e "${GREEN}[+] Starting PHP server and ngrok...${NC}"
-php -S 127.0.0.1:8080 > /dev/null 2>&1 &
+php -S 127.0.0.1:8888 > /dev/null 2>&1 &
 ngrok http 8080 > /dev/null 2>&1 &
 sleep 15
 
